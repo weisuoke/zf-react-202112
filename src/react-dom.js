@@ -23,6 +23,12 @@ function createDOM(vdom) {
   let dom;  // 真实DOM
   if (type === REACT_TEXT) {
     dom = document.createTextNode(props)
+  } else if (typeof type === "function") {
+    if (type.isReactComponent) {
+      return mountClassComponent(vdom);
+    } else {
+      return mountFunctionComponent(vdom)
+    }
   } else {
     dom = document.createElement(type)
   }
@@ -38,6 +44,24 @@ function createDOM(vdom) {
 
   vdom.dom = dom;
   return dom;
+}
+
+function mountFunctionComponent(vdom) {
+  // 获取函数本身
+  let { type, props } = vdom;
+  // 把属性对象传递给函数执行，返回要渲染的真实DOM
+  let renderVdom = type(props);
+  // vdom 老的要渲染的虚拟DOM = renderVdom, 方便后面的 DOM diff
+  vdom.oldRenderVdom = renderVdom
+  return createDOM(renderVdom)
+}
+
+function mountClassComponent(vdom) {
+  let { type, props } = vdom;
+  let classInstance = new type(props);
+  let renderVdom = classInstance.render();
+  let dom = createDOM(renderVdom)
+  return dom
 }
 
 function reconcileChildren(children, parentDOM) {
