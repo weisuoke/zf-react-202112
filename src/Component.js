@@ -6,9 +6,14 @@ class Updater{
     this.classInstance = classInstance
     // 等待更新的状态
     this.pendingStates = []
+    // 更新后的回调
+    this.callbacks = []
   }
-  addState(partialState) {
+  addState(partialState, callback) {
     this.pendingStates.push(partialState)
+    if (typeof callback === 'function') {
+      this.callbacks.push(callback)
+    }
     // 触发更新
     this.emitUpdate();
   }
@@ -16,10 +21,14 @@ class Updater{
     this.updateComponent();
   }
   updateComponent() {
-    let { classInstance, pendingStates } = this;
+    let { classInstance, pendingStates, callbacks } = this;
     // 长度大于 0，说明当前有正在准备要更新的分状态。
     if (pendingStates.length > 0) {
       shouldUpdate(classInstance, this.getState())
+    }
+    if (callbacks.length > 0) {
+      callbacks.forEach(callback => callback())
+      callbacks.length = 0
     }
   }
   // 返回新状态
@@ -29,6 +38,9 @@ class Updater{
     let { state } = classInstance;
     // 用老状态合并新状态
     pendingStates.forEach((partialState) => {
+      if (typeof partialState === "function") {
+        partialState = partialState(state)
+      }
       state = {...state, ...partialState}
     })
     // 清空数组
