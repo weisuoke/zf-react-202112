@@ -57,11 +57,14 @@ function mountFunctionComponent(vdom) {
 }
 
 function mountClassComponent(vdom) {
-  let { type, props } = vdom;
-  let classInstance = new type(props);
+  // 获取函数本身
+  let { type: ClassComponent, props } = vdom;
+  // 把属性对象传递给函数执行，返回要渲染的虚拟DOM
+  let classInstance = new ClassComponent(props);
   let renderVdom = classInstance.render();
-  let dom = createDOM(renderVdom)
-  return dom
+  // 把上一次render渲染得到的虚拟DOM
+  vdom.oldRenderVdom = classInstance.oldRenderVdom = renderVdom
+  return createDOM(renderVdom)
 }
 
 function reconcileChildren(children, parentDOM) {
@@ -85,6 +88,8 @@ function updateProps(dom, oldProps = {}, newProps = {}) {
       for (let attr in styleObj) {
         dom.style[attr] = styleObj[attr];
       }
+    } else if(/^on[A-Z].*/.test(key)) {
+      dom[key.toLowerCase()] = newProps[key];
     } else {
       dom[key] = newProps[key]
     }
@@ -96,6 +101,31 @@ function updateProps(dom, oldProps = {}, newProps = {}) {
       dom[key] = null;
     }
   }
+}
+
+export function findDOM(vdom) {
+  if (!vdom) return null;
+  // 如果 vdom 上有 dom 属性，说明这个 vdom 是一个原生组件 span div p
+  if (vdom.dom) {
+    return vdom.dom;  // 返回它对应的真实 DOM 即可
+  } else {
+    // 它可能是一个函数组件或者类组件
+    let oldRenderVdom = vdom.oldRenderVdomc
+    return findDOM(oldRenderVdom)
+  }
+}
+
+/**
+ * 进行 DOM-DIFF 对比
+ * @param parentDOM 父真实 DOM 节点
+ * @param oldVdom 老的虚拟 DOM
+ * @param newVdom 新的虚拟 DOM
+ */
+export function compareTwoVdom(parentDOM, oldVdom, newVdom) {
+  // 获取老的真实 DOM
+  let oldDOM = findDOM(oldVdom)
+  let newDOM = createDOM(newVdom)
+  parentDOM.replaceChild(newDOM, oldDOM)
 }
 
 const ReactDOM = {
