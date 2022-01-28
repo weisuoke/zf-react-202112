@@ -1,5 +1,19 @@
 import { findDOM, compareTwoVdom } from "./react-dom";
 
+export let updateQueue = {
+  isBatchingUpdate: false,  // 更新队里中有一个标识，是否要执行批量更新
+  updaters: new Set(),  // Updater实例的集合
+  batchUpdate() {
+    for(let updater of updateQueue.updaters) {
+      updater.updateComponent()
+    }
+    // 重置为false
+    updateQueue.isBatchingUpdate = false
+    // 清空updater集合
+    updateQueue.updaters.clear()
+  }
+}
+
 class Updater{
   constructor(classInstance) {
     // 类组件实例
@@ -18,7 +32,13 @@ class Updater{
     this.emitUpdate();
   }
   emitUpdate() {
-    this.updateComponent();
+    // 如果批量更新只需要把 updater 添加到队列里。不需要实时更新
+    if (updateQueue.isBatchingUpdate) {
+      updateQueue.updaters.add(this)
+    } else {
+      // 否则就直接更新
+      this.updateComponent();
+    }
   }
   updateComponent() {
     let { classInstance, pendingStates, callbacks } = this;
