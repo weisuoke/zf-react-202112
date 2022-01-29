@@ -1,30 +1,61 @@
 import React from "./react";
 import ReactDOM from "./react-dom";
 
-function TextInput(props, forwardRef) {
-  return <input type="text" ref={forwardRef}/>
-}
+/**
+ * 类组件的生命周期
+ */
 
-const ForwardedTextInput = React.forwardRef(TextInput)
-
-class Form extends React.Component {
-  constructor() {
-    super();
-    this.textInputRef = React.createRef()
+class Counter extends React.Component {
+  // 设置默认属性
+  static defaultProps = {
+    name: 'zhufeng'
   }
 
-  getFocus = () => {
-    this.textInputRef.current.focus()
+  constructor(props) {
+    super(props);
+    // 设置默认状态对象
+    this.state = {number: 0}
+    console.log(`Counter 1.constructor`)
+  }
+
+  componentWillMount() {
+    console.log(`Counter 2.componentWillMount`)
+  }
+
+  componentDidMount() {
+    console.log(`Counter 4.componentDidMount`)
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    console.log(`Counter 5.shouldComponentUpdate`, nextProps, nextState)
+    // 奇数不更新界面，偶数更新界面，不管要不要更新 this.state其实都会更新
+    return nextState.number % 2 === 0
+  }
+
+  componentWillUpdate(nextProps, nextState) {
+    console.log(`Counter 6.componentWillUpdate`)
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    console.log(`Counter 7.componentDidUpdate`)
+  }
+
+
+  handleClick = () => {
+    this.setState({ number: this.state.number + 1 })
   }
 
   render() {
+    console.log(`Counter 3. render`)
     return (
       <div>
-        <ForwardedTextInput ref={this.textInputRef} />
-        <button onClick={this.getFocus}>获得焦点</button>
+        <p>{ this.state.number }</p>
+        <button onClick={this.handleClick}>+</button>
       </div>
     )
   }
+
 }
 
-ReactDOM.render(<Form />, document.getElementById("root"));
+
+ReactDOM.render(<Counter />, document.getElementById("root"));

@@ -12,7 +12,12 @@ function render(vdom, container) {
  */
 function mount(vdom, container) {
   let newDOM = createDOM(vdom)
-  container.appendChild(newDOM)
+  if (newDOM) {
+    // 把子DOM挂载到父DOM
+    container.appendChild(newDOM)
+    // 执行子 DOM 的挂载完成事件
+    if (newDOM.componentDidMount) newDOM.componentDidMount()
+  }
 }
 
 /**
@@ -75,10 +80,17 @@ function mountClassComponent(vdom) {
   let classInstance = new ClassComponent(props);
   // 让 ref.current 指向类组件的实例
   if (ref) ref.current = classInstance;
+  if (classInstance.componentWillMount) {
+    classInstance.componentWillMount()
+  }
   let renderVdom = classInstance.render();
   // 把上一次render渲染得到的虚拟DOM
   vdom.oldRenderVdom = classInstance.oldRenderVdom = renderVdom
-  return createDOM(renderVdom)
+  let dom = createDOM(renderVdom)
+  if (classInstance.componentDidMount) {
+    dom.componentDidMount = classInstance.componentDidMount.bind(this)
+  }
+  return dom
 }
 
 function reconcileChildren(children, parentDOM) {

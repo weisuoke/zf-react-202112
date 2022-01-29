@@ -70,8 +70,21 @@ class Updater{
 }
 
 function shouldUpdate(classInstance, nextState) {
+  // 默认是要更新的
+  let willUpdate = true;
+  // 如果有方法，并且此方法返回了 false，那就不更新，如果没有此方法，或者返回了 true 就要继续向下更新组件
+  if (classInstance.shouldComponentUpdate && !classInstance.shouldComponentUpdate(null, nextState)) {
+    willUpdate = false
+  }
+  if (willUpdate && classInstance.componentWillUpdate) {
+    classInstance.componentWillUpdate()
+  }
+  // 不管要不要更新，都要把最新的状态赋给 classInstance.state
   classInstance.state = nextState
-  classInstance.forceUpdate();
+  // 如果要更新，才会走组件的更新方法
+  if (willUpdate) {
+    classInstance.forceUpdate();
+  }
 }
 
 export class Component {
@@ -95,5 +108,8 @@ export class Component {
     // 把老得虚拟DOM和新的虚拟DOM进行对比，对比得到的差异更新到真实DOM
     compareTwoVdom(oldDOM.parentNode, oldRenderVdom, newRenderVdom)
     this.oldRenderVdom = newRenderVdom
+    if(this.componentDidUpdate) {
+      this.componentDidUpdate(this.props, this.state)
+    }
   }
 }

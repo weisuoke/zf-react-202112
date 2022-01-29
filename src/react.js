@@ -9,7 +9,6 @@ import { Component } from "./Component";
  * @param children 儿子们
  */
 function createElement(type, config, children) {
-  console.log('createElement', type, config.ref)
   let ref, key;
   if (config) {
     ref = config.ref;
