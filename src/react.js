@@ -1,4 +1,4 @@
-import { REACT_ELEMENT } from "./constants";
+import {REACT_ELEMENT, REACT_FORWARD_REF_TYPE} from "./constants";
 import { wrapToVdom } from "./utils";
 import { Component } from "./Component";
 
@@ -9,6 +9,7 @@ import { Component } from "./Component";
  * @param children 儿子们
  */
 function createElement(type, config, children) {
+  console.log('createElement', type, config.ref)
   let ref, key;
   if (config) {
     ref = config.ref;
@@ -35,8 +36,23 @@ function createElement(type, config, children) {
   }
 }
 
+function createRef() {
+  return {
+    current: null
+  }
+}
+
+function forwardRef(render) {
+  return {
+    $$typeof: REACT_FORWARD_REF_TYPE,
+    render
+  }
+}
+
 const React = {
   createElement,
-  Component
+  Component,
+  createRef,
+  forwardRef
 }
 export default React

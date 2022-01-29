@@ -1,4 +1,4 @@
-import {REACT_TEXT} from "./constants";
+import {REACT_FORWARD_REF_TYPE, REACT_TEXT} from "./constants";
 import {addEvent} from "./event";
 
 function render(vdom, container) {
@@ -20,14 +20,17 @@ function mount(vdom, container) {
  * @param vdom 虚拟DOM
  */
 function createDOM(vdom) {
-  let { type, props } = vdom;
+  let { type, props, ref } = vdom;
   let dom;  // 真实DOM
-  if (type === REACT_TEXT) {
+
+  if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) { // 转发组件
+    return mountForwardComponent(vdom);
+  } else if (type === REACT_TEXT) { // 文本组件
     dom = document.createTextNode(props)
   } else if (typeof type === "function") {
-    if (type.isReactComponent) {
+    if (type.isReactComponent) { // 类组件
       return mountClassComponent(vdom);
-    } else {
+    } else { // 函数组件
       return mountFunctionComponent(vdom)
     }
   } else {
@@ -44,7 +47,15 @@ function createDOM(vdom) {
   }
 
   vdom.dom = dom;
+  if (ref) ref.current = dom;
   return dom;
+}
+
+function mountForwardComponent(vdom) {
+  let { type, props, ref } = vdom;
+  let renderVdom = type.render(props, ref)
+  vdom.oldRenderVdom = renderVdom
+  return createDOM(renderVdom)
 }
 
 function mountFunctionComponent(vdom) {
@@ -59,9 +70,11 @@ function mountFunctionComponent(vdom) {
 
 function mountClassComponent(vdom) {
   // 获取函数本身
-  let { type: ClassComponent, props } = vdom;
+  let { type: ClassComponent, props, ref } = vdom;
   // 把属性对象传递给函数执行，返回要渲染的虚拟DOM
   let classInstance = new ClassComponent(props);
+  // 让 ref.current 指向类组件的实例
+  if (ref) ref.current = classInstance;
   let renderVdom = classInstance.render();
   // 把上一次render渲染得到的虚拟DOM
   vdom.oldRenderVdom = classInstance.oldRenderVdom = renderVdom
