@@ -61,11 +61,30 @@ function createContext() {
   return context;
 }
 
+function cloneElement(element, newProps, ...newChildren) {
+  let oldChildren = element.props && element.props.children
+  oldChildren = (Array.isArray(oldChildren) ? oldChildren : [oldChildren]).filter(item => typeof item !== "undefined").map(wrapToVdom)
+  newChildren = newChildren.filter(item => typeof item !== "undefined").map(wrapToVdom)
+  let props = {...element.props, ...newProps}
+  if (newChildren.length > 0) {
+    props.children = newChildren
+  } else {
+    props.children = oldChildren
+  }
+  if (props.children.length === 0) {
+    props.children = undefined
+  } else if (props.children.length === 1) {
+    props.children = props.children[0]
+  }
+  return {...element, props}
+}
+
 const React = {
   createElement,
   Component,
   createRef,
   forwardRef,
   createContext,
+  cloneElement,
 }
 export default React
