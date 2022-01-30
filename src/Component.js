@@ -105,13 +105,19 @@ export class Component {
     let oldRenderVdom = this.oldRenderVdom;
     // 获取虚拟DOM对应的真实DOM oldRenderVdom.dom
     let oldDOM = findDOM(oldRenderVdom)
+    if (this.constructor.getDerivedStateFromProps) {
+      let newState = this.constructor.getDerivedStateFromProps(this.props, this.state)
+      if (newState)
+        this.state = {...this.state, ...newState}
+    }
+    let snapshot = this.getSnapshotBeforeUpdate && this.getSnapshotBeforeUpdate()
     // 重新执行 render 得到新的虚拟DOM
     let newRenderVdom = this.render()
     // 把老得虚拟DOM和新的虚拟DOM进行对比，对比得到的差异更新到真实DOM
     compareTwoVdom(oldDOM.parentNode, oldRenderVdom, newRenderVdom)
     this.oldRenderVdom = newRenderVdom
     if(this.componentDidUpdate) {
-      this.componentDidUpdate(this.props, this.state)
+      this.componentDidUpdate(this.props, this.state, snapshot)
     }
   }
 }
