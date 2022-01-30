@@ -105,6 +105,10 @@ export class Component {
     let oldRenderVdom = this.oldRenderVdom;
     // 获取虚拟DOM对应的真实DOM oldRenderVdom.dom
     let oldDOM = findDOM(oldRenderVdom)
+    // 更新类组件的时候要重新取值
+    if (this.constructor.contextType) {
+      this.context = this.constructor.contextType._currentValue
+    }
     if (this.constructor.getDerivedStateFromProps) {
       let newState = this.constructor.getDerivedStateFromProps(this.props, this.state)
       if (newState)

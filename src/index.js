@@ -1,54 +1,88 @@
 import React from './react';
 import ReactDOM from './react-dom';
-class ScrollingList extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { messages: [] }
-    this.wrapper = React.createRef();
-  }
-
-  addMessage() {
-    this.setState(state => ({
-      messages: [`${state.messages.length}`, ...state.messages],
-    }))
-  }
-  componentDidMount() {
-    this.timeID = window.setInterval(() => {//设置定时器
-      this.addMessage();
-    }, 1000)
-  }
-  componentWillUnmount() {//清除定时器
-    window.clearInterval(this.timeID);
-  }
-  getSnapshotBeforeUpdate() {//很关键的，我们获取当前rootNode的scrollHeight，传到componentDidUpdate 的参数perScrollHeight
-    return {
-      prevScrollTop:this.wrapper.current.scrollTop,
-      prevScrollHeight:this.wrapper.current.scrollHeight
-    };
-  }
-  componentDidUpdate(pervProps, pervState, {prevScrollHeight,prevScrollTop}) {
-    //当前向上卷去的高度加上增加的内容高度
-    this.wrapper.current.scrollTop = prevScrollTop + (this.wrapper.current.scrollHeight - prevScrollHeight);
-  }
+let ThemeContext = React.createContext();
+console.log(ThemeContext);
+const { Provider, Consumer } = ThemeContext;
+let style = { margin: '5px', padding: '5px' };
+function Title(props) {
+  console.log('Title');
+  return (
+    <Consumer>
+      {
+        (contextValue) => (
+          <div style={{ ...style, border: `5px solid ${contextValue.color}` }}>
+            Title
+          </div>
+        )
+      }
+    </Consumer>
+  )
+}
+class Header extends React.Component {
+  static contextType = ThemeContext
   render() {
-    let style = {
-      height: '100px',
-      width: '200px',
-      border: '1px solid red',
-      overflow: 'auto'
-    }
-    //<div key={index}>里不要加空格!
+    console.log('Header');
     return (
-      <div style={style} ref={this.wrapper} >
-        {this.state.messages.map((message, index) => (
-          <div key={index}>{message}</div>
-        ))}
+      <div style={{ ...style, border: `5px solid ${this.context.color}` }}>
+        Header
+        <Title />
       </div>
-    );
+    )
+  }
+}
+function Content() {
+  console.log('Content');
+  return (
+    <Consumer>
+      {
+        (contextValue) => (
+          <div style={{ ...style, border: `5px solid ${contextValue.color}` }}>
+            Content
+            <button style={{ color: 'red' }} onClick={() => contextValue.changeColor('red')}>变红</button>
+            <button style={{ color: 'green' }} onClick={() => contextValue.changeColor('green')}>变绿</button>
+          </div>
+        )
+      }
+    </Consumer>
+  )
+}
+class Main extends React.Component {
+  static contextType = ThemeContext
+  render() {
+    console.log('Main');
+    return (
+      <div style={{ ...style, border: `5px solid ${this.context.color}` }}>
+        Main
+        <Content />
+      </div>
+    )
   }
 }
 
+class Page extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { color: 'black' };
+  }
+  changeColor = (color) => {
+    this.setState({ color });
+  }
+  render() {
+
+    console.log('Page');
+    let contextValue = { color: this.state.color, changeColor: this.changeColor };
+    return (
+      <Provider value={contextValue}>
+        <div style={{ ...style, width: '250px', border: `5px solid ${this.state.color}` }}>
+          Page
+          <Header />
+          <Main />
+        </div>
+      </Provider >
+    )
+  }
+}
 ReactDOM.render(
-  <ScrollingList />,
+  <Page />,
   document.getElementById('root')
 );

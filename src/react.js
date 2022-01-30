@@ -1,4 +1,4 @@
-import {REACT_ELEMENT, REACT_FORWARD_REF_TYPE} from "./constants";
+import {REACT_CONTEXT, REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_PROVIDER} from "./constants";
 import { wrapToVdom } from "./utils";
 import { Component } from "./Component";
 
@@ -48,10 +48,24 @@ function forwardRef(render) {
   }
 }
 
+function createContext() {
+  let context = { $$typeof: REACT_CONTEXT }
+  context.Provider = {
+    $$typeof: REACT_PROVIDER,
+    _context: context
+  }
+  context.Consumer = {
+    $$typeof: REACT_CONTEXT,
+    _context: context
+  }
+  return context;
+}
+
 const React = {
   createElement,
   Component,
   createRef,
-  forwardRef
+  forwardRef,
+  createContext,
 }
 export default React
