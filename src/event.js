@@ -41,6 +41,7 @@ function dispatchEvent(nativeEvent) {
     target = target.parentNode;
   }
 
+  updateQueue.isBatchingUpdate = false
   updateQueue.batchUpdate()
 }
 

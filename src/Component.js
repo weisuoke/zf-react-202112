@@ -4,11 +4,11 @@ export let updateQueue = {
   isBatchingUpdate: false,  // 更新队里中有一个标识，是否要执行批量更新
   updaters: new Set(),  // Updater实例的集合
   batchUpdate() {
+    // 重置为false
+    updateQueue.isBatchingUpdate = false
     for(let updater of updateQueue.updaters) {
       updater.updateComponent()
     }
-    // 重置为false
-    updateQueue.isBatchingUpdate = false
     // 清空updater集合
     updateQueue.updaters.clear()
   }
@@ -31,7 +31,8 @@ class Updater{
     // 触发更新
     this.emitUpdate();
   }
-  emitUpdate() {
+  emitUpdate(nextProps) {
+    this.nextProps = nextProps
     // 如果批量更新只需要把 updater 添加到队列里。不需要实时更新
     if (updateQueue.isBatchingUpdate) {
       updateQueue.updaters.add(this)
@@ -41,10 +42,10 @@ class Updater{
     }
   }
   updateComponent() {
-    let { classInstance, pendingStates, callbacks } = this;
+    let { classInstance, pendingStates, nextProps, callbacks } = this;
     // 长度大于 0，说明当前有正在准备要更新的分状态。
-    if (pendingStates.length > 0) {
-      shouldUpdate(classInstance, this.getState())
+    if (nextProps || pendingStates.length > 0) {
+      shouldUpdate(classInstance, nextProps, this.getState())
     }
     if (callbacks.length > 0) {
       callbacks.forEach(callback => callback())
@@ -69,11 +70,11 @@ class Updater{
   }
 }
 
-function shouldUpdate(classInstance, nextState) {
+function shouldUpdate(classInstance, nextProps, nextState) {
   // 默认是要更新的
   let willUpdate = true;
   // 如果有方法，并且此方法返回了 false，那就不更新，如果没有此方法，或者返回了 true 就要继续向下更新组件
-  if (classInstance.shouldComponentUpdate && !classInstance.shouldComponentUpdate(null, nextState)) {
+  if (classInstance.shouldComponentUpdate && !classInstance.shouldComponentUpdate(nextProps, nextState)) {
     willUpdate = false
   }
   if (willUpdate && classInstance.componentWillUpdate) {
@@ -81,6 +82,7 @@ function shouldUpdate(classInstance, nextState) {
   }
   // 不管要不要更新，都要把最新的状态赋给 classInstance.state
   classInstance.state = nextState
+  if(nextProps) classInstance.props = nextProps
   // 如果要更新，才会走组件的更新方法
   if (willUpdate) {
     classInstance.forceUpdate();
