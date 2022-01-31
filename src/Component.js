@@ -1,4 +1,5 @@
 import { findDOM, compareTwoVdom } from "./react-dom";
+import {shallowEqual} from "./utils";
 
 export let updateQueue = {
   isBatchingUpdate: false,  // 更新队里中有一个标识，是否要执行批量更新
@@ -123,5 +124,12 @@ export class Component {
     if(this.componentDidUpdate) {
       this.componentDidUpdate(this.props, this.state, snapshot)
     }
+  }
+}
+
+export class PureComponent extends Component {
+  shouldComponentUpdate(newProps, nextState) {
+    // 如果新属性和老属性不相等或者新状态和老状态不相等
+    return !shallowEqual(this.props, newProps) || !shallowEqual(this.state, nextState)
   }
 }

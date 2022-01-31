@@ -1,4 +1,12 @@
-import {MOVE, PLACEMENT, REACT_CONTEXT, REACT_FORWARD_REF_TYPE, REACT_PROVIDER, REACT_TEXT} from "./constants";
+import {
+  MOVE,
+  PLACEMENT,
+  REACT_CONTEXT,
+  REACT_FORWARD_REF_TYPE,
+  REACT_MEMO,
+  REACT_PROVIDER,
+  REACT_TEXT
+} from "./constants";
 import {addEvent} from "./event";
 
 function render(vdom, container) {
@@ -28,7 +36,9 @@ function createDOM(vdom) {
   let { type, props, ref } = vdom;
   let dom;  // 真实DOM
 
-  if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) { // 转发组件
+  if (type && type.$$typeof === REACT_MEMO) {
+    return mountMemoComponent(vdom)
+  } else if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) { // 转发组件
     return mountForwardComponent(vdom);
   } else if(type && type.$$typeof === REACT_PROVIDER) {
     return mountProviderComponent(vdom)
@@ -59,6 +69,15 @@ function createDOM(vdom) {
   vdom.dom = dom;
   if (ref) ref.current = dom;
   return dom;
+}
+
+function mountMemoComponent(vdom) {
+  let { type: { type: functionComponent }, props } = vdom;
+  let renderVdom = functionComponent(props)
+  // 记录下老的属性对象
+  vdom.prevProps = props
+  vdom.oldRenderVdom = renderVdom;
+  return createDOM(renderVdom)
 }
 
 function mountProviderComponent(vdom) {
@@ -212,7 +231,9 @@ export function compareTwoVdom(parentDOM, oldVdom, newVdom, nextDOM) {
  * @param newVdom
  */
 function updateElement(oldVdom, newVdom) {
-  if (oldVdom.type.$$typeof === REACT_CONTEXT) {
+  if (oldVdom.type && oldVdom.type.$$typeof === REACT_MEMO) {
+    updateMemoComponent(oldVdom, newVdom)
+  } else if (oldVdom.type.$$typeof === REACT_CONTEXT) {
     updateContextComponent(oldVdom, newVdom)
   } else if (oldVdom.type.$$typeof === REACT_PROVIDER) {
     updateProviderComponent(oldVdom, newVdom)
@@ -232,6 +253,26 @@ function updateElement(oldVdom, newVdom) {
     } else {
       updateFunctionComponent(oldVdom, newVdom)
     }
+  }
+}
+
+function updateMemoComponent(oldVdom, newVdom) {
+  // 1. 获取老得虚拟 DOM 的比较方法和老的属性对象
+  let { type: { compare }, prevProps } = oldVdom;
+  // 2. 比较老得属性对象和新的虚拟DOM的属性对象
+  if (!compare(prevProps, newVdom.props)) {
+    // 如果不一样，就要重新渲染，执行DOM-DIFF
+    let currentDOM = findDOM(oldVdom)
+    if (!currentDOM) return;
+    let parentDOM = currentDOM.parentNode;
+    let { type: { type: FunctionComponent }, props } = newVdom;
+    let newRenderVdom = FunctionComponent(props)
+    compareTwoVdom(parentDOM, oldVdom.oldRenderVdom, newRenderVdom)
+    newVdom.prevProps = props;
+    newVdom.oldRenderVdom = newRenderVdom
+  } else {
+    newVdom.prevProps = prevProps
+    newVdom.oldRenderVdom = oldVdom.oldRenderVdom
   }
 }
 
