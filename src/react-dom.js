@@ -9,8 +9,67 @@ import {
 } from "./constants";
 import {addEvent} from "./event";
 
+// 保存 hook 状态值的数组
+let hookStates = [];
+let hookIndex = 0;
+let scheduleUpdate;
+
 function render(vdom, container) {
   mount(vdom, container)
+  scheduleUpdate = () => {
+    hookIndex = 0;
+    compareTwoVdom(container, vdom, vdom)
+  }
+}
+
+export function useState(initialState) {
+  hookStates[hookIndex] = hookStates[hookIndex] || initialState
+  let currentIndex = hookIndex;
+  function setState(newState) {
+    hookStates[currentIndex] = newState
+    scheduleUpdate();
+  }
+  return [hookStates[hookIndex++], setState]
+}
+
+export function useMemo(factory, deps) {
+  // 先判断有没有老值
+  if (hookStates[hookIndex]) {
+    let [oldMemo, oldDeps] = hookStates[hookIndex]
+    // 判断依赖数组的每一个元素和老的依赖数组中的每一个元素是否相同
+    let same = deps.every((dep, index) => dep === oldDeps[index])
+    if(same) {
+      hookIndex++
+      return oldMemo
+    } else {
+      let newMemo = factory();  // { number }
+      hookStates[hookIndex++] = [newMemo, deps]
+      return newMemo
+    }
+  } else {
+    let newMemo = factory();  // { number }
+    hookStates[hookIndex++] = [newMemo, deps]
+    return newMemo
+  }
+}
+
+export function useCallback(callback, deps) {
+  // 先判断有没有老值
+  if (hookStates[hookIndex]) {
+    let [oldCallback, oldDeps] = hookStates[hookIndex]
+    // 判断依赖数组的每一个元素和老的依赖数组中的每一个元素是否相同
+    let same = deps.every((dep, index) => dep === oldDeps[index])
+    if(same) {
+      hookIndex++
+      return oldCallback
+    } else {
+      hookStates[hookIndex++] = [callback, deps]
+      return callback
+    }
+  } else {
+    hookStates[hookIndex++] = [callback, deps]
+    return callback
+  }
 }
 
 /**
