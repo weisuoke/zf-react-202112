@@ -22,14 +22,18 @@ function render(vdom, container) {
   }
 }
 
-export function useState(initialState) {
-  hookStates[hookIndex] = hookStates[hookIndex] || initialState
+export function useReducer(reducer, initialState) {
+  hookStates[hookIndex] = hookStates[hookIndex] || initialState;
   let currentIndex = hookIndex;
-  function setState(newState) {
-    hookStates[currentIndex] = newState
+  function dispatch(action) {
+    hookStates[currentIndex] = reducer ? reducer(hookStates[currentIndex], action) : action
     scheduleUpdate();
   }
-  return [hookStates[hookIndex++], setState]
+  return [hookStates[hookIndex++], dispatch]
+}
+
+export function useState(initialState) {
+  return useReducer(null, initialState)
 }
 
 export function useMemo(factory, deps) {
