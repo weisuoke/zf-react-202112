@@ -22,11 +22,48 @@ function render(vdom, container) {
   }
 }
 
+export function useEffect(callback, deps) {
+  let currentIndex = hookIndex;
+  if (hookStates[hookIndex]) {
+    let [lastDestroy, oldDeps] = hookStates[hookIndex];
+    let same = deps && deps.every((dep, index) => dep === oldDeps[index])
+    if (same) {
+      hookIndex++
+    } else {
+      lastDestroy && lastDestroy()
+      setTimeout(() => {
+        // 执行 callback 函数，返回一个销毁函数
+        let destroy = callback()
+        hookStates[currentIndex] = [destroy, deps]
+      })
+      hookIndex++
+    }
+  } else {
+    // 开启一个新的宏任务
+    setTimeout(() => {
+      // 执行 callback 函数，返回一个销毁函数
+      let destroy = callback()
+      hookStates[currentIndex] = [destroy, deps]
+    });
+    hookIndex++
+  }
+}
+
 export function useReducer(reducer, initialState) {
   hookStates[hookIndex] = hookStates[hookIndex] || initialState;
   let currentIndex = hookIndex;
   function dispatch(action) {
-    hookStates[currentIndex] = reducer ? reducer(hookStates[currentIndex], action) : action
+    //1.获取老状态
+    let oldState = hookStates[currentIndex]
+    if (reducer) {
+      let newState = reducer(oldState, action);
+      hookStates[currentIndex] = newState
+    } else {
+      //判断action是不是函数，如果是传入老状态，计算新状态
+      let newState = typeof action === 'function' ? action(oldState) : action;
+      hookStates[currentIndex] = newState
+    }
+
     scheduleUpdate();
   }
   return [hookStates[hookIndex++], dispatch]
@@ -41,7 +78,7 @@ export function useMemo(factory, deps) {
   if (hookStates[hookIndex]) {
     let [oldMemo, oldDeps] = hookStates[hookIndex]
     // 判断依赖数组的每一个元素和老的依赖数组中的每一个元素是否相同
-    let same = deps.every((dep, index) => dep === oldDeps[index])
+    let same = deps && deps.every((dep, index) => dep === oldDeps[index])
     if(same) {
       hookIndex++
       return oldMemo
@@ -62,7 +99,7 @@ export function useCallback(callback, deps) {
   if (hookStates[hookIndex]) {
     let [oldCallback, oldDeps] = hookStates[hookIndex]
     // 判断依赖数组的每一个元素和老的依赖数组中的每一个元素是否相同
-    let same = deps.every((dep, index) => dep === oldDeps[index])
+    let same = deps && deps.every((dep, index) => dep === oldDeps[index])
     if(same) {
       hookIndex++
       return oldCallback
