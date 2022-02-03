@@ -1,4 +1,4 @@
-import { REACT_TEXT } from "./constants";
+import { REACT_TEXT } from "./ReactSymbols";
 
 /**
  * 把虚拟 DOM 节点进行包装
@@ -8,7 +8,7 @@ import { REACT_TEXT } from "./constants";
  */
 export function wrapToVdom(element) {
   return typeof element === 'string' || typeof element === 'number' ? {
-    type: REACT_TEXT, props: element
+    $$typeof: REACT_TEXT, props: element
   } : element
 }
 

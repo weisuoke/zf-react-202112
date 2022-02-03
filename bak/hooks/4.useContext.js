@@ -1,4 +1,4 @@
-import {REACT_CONTEXT, REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_MEMO, REACT_PROVIDER} from "./constants";
+import {REACT_CONTEXT, REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_MEMO, REACT_PROVIDER} from "./ReactSymbols";
 import {shallowEqual, wrapToVdom} from "./utils";
 import { Component, PureComponent } from "./Component";
 import { useState, useMemo, useCallback, useReducer } from "./react-dom";

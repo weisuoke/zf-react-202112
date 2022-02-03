@@ -1,12 +1,14 @@
 import {
-  MOVE,
-  PLACEMENT,
   REACT_CONTEXT,
-  REACT_FORWARD_REF_TYPE,
+  REACT_FORWARD_REF_TYPE, REACT_FRAGMENT,
   REACT_MEMO,
   REACT_PROVIDER,
   REACT_TEXT
-} from "./constants";
+} from "./ReactSymbols";
+import {
+  MOVE,
+  PLACEMENT,
+} from './ReactFlags'
 import {addEvent} from "./event";
 
 // 保存 hook 状态值的数组
@@ -167,10 +169,14 @@ function mount(vdom, container) {
  * @param vdom 虚拟DOM
  */
 function createDOM(vdom) {
-  let { type, props, ref } = vdom;
+  let { type, props, ref, $$typeof } = vdom;
   let dom;  // 真实DOM
 
-  if (type && type.$$typeof === REACT_MEMO) {
+  if (type && type === REACT_FRAGMENT) {
+    dom = document.createDocumentFragment();
+  } else if ($$typeof && $$typeof === REACT_TEXT) { // 文本组件
+    dom = document.createTextNode(props)
+  } else if (type && type.$$typeof === REACT_MEMO) {
     return mountMemoComponent(vdom)
   } else if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) { // 转发组件
     return mountForwardComponent(vdom);
@@ -178,8 +184,6 @@ function createDOM(vdom) {
     return mountProviderComponent(vdom)
   } else if(type && type.$$typeof === REACT_CONTEXT) {
     return mountContextComponent(vdom)
-  } else if (type === REACT_TEXT) { // 文本组件
-    dom = document.createTextNode(props)
   } else if (typeof type === "function") {
     if (type.isReactComponent) { // 类组件
       return mountClassComponent(vdom);
@@ -192,11 +196,11 @@ function createDOM(vdom) {
   if (props) {
     updateProps(dom, {}, props)
     const children = props.children
-    if (typeof children === 'object' && children.type) {
+    if (Array.isArray(children)) {
+      reconcileChildren(children, dom);
+    } else if (typeof children === 'object' && children.$$typeof) {
       children.mountIndex = 0
       mount(children, dom)
-    } else if (Array.isArray(children)) {
-      reconcileChildren(children, dom);
     }
   }
 
