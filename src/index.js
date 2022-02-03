@@ -1,21 +1,40 @@
 import React from './react';
 import ReactDOM from './react-dom';
 
-function Counter() {
-  const [number, setNumber] = React.useState(0);
-  React.useEffect(() => {
-    console.log('开启一个新的定时器')
-    const $timer = setInterval(() => {
-      setNumber(number => number + 1);
-    }, 1000);
-    return () => {
-      console.log('销毁老的定时器');
-      clearInterval($timer);
+function Child(props, ref) {
+  const inputRef = React.useRef();
+  React.useImperativeHandle(ref, () => (
+    {
+      focus() {
+        inputRef.current.focus();
+      }
     }
-  });
+  ));
   return (
-    <p>{number}</p>
+    <input type="text" ref={inputRef} />
   )
 }
 
-ReactDOM.render(<Counter />, document.getElementById('root'));
+const ForwardChild = React.forwardRef(Child);
+
+function Parent() {
+  let [number, setNumber] = React.useState(0);
+  const inputRef = React.useRef();
+  function getFocus() {
+    console.log(inputRef.current);
+    inputRef.current.value = 'focus';
+    inputRef.current.focus();
+  }
+  return (
+    <div>
+      <ForwardChild ref={inputRef} />
+      <button onClick={getFocus}>获得焦点</button>
+      <p>{number}</p>
+      <button onClick={() => {
+        debugger
+        setNumber( number + 1)
+      }}>+</button>
+    </div>
+  )
+}
+ReactDOM.render(<Parent/>,document.getElementById('root'));

@@ -22,6 +22,11 @@ function render(vdom, container) {
   }
 }
 
+export function useRef(initialState) {
+  hookStates[hookIndex] = hookStates[hookIndex] || { current: initialState }
+  return hookStates[hookIndex++]
+}
+
 export function useEffect(callback, deps) {
   let currentIndex = hookIndex;
   if (hookStates[hookIndex]) {
@@ -31,7 +36,36 @@ export function useEffect(callback, deps) {
       hookIndex++
     } else {
       lastDestroy && lastDestroy()
-      setTimeout(() => {
+      let timer = setTimeout(() => {
+        // 执行 callback 函数，返回一个销毁函数
+        let destroy = callback()
+        hookStates[currentIndex] = [destroy, deps]
+        clearTimeout(timer)
+      })
+      hookIndex++
+    }
+  } else {
+    // 开启一个新的宏任务
+    let timer = setTimeout(() => {
+      // 执行 callback 函数，返回一个销毁函数
+      let destroy = callback()
+      hookStates[currentIndex] = [destroy, deps]
+      clearTimeout(timer)
+    });
+    hookIndex++
+  }
+}
+
+export function useLayoutEffect(callback, deps) {
+  let currentIndex = hookIndex;
+  if (hookStates[hookIndex]) {
+    let [lastDestroy, oldDeps] = hookStates[hookIndex];
+    let same = deps && deps.every((dep, index) => dep === oldDeps[index])
+    if (same) {
+      hookIndex++
+    } else {
+      lastDestroy && lastDestroy()
+      queueMicrotask(() => {
         // 执行 callback 函数，返回一个销毁函数
         let destroy = callback()
         hookStates[currentIndex] = [destroy, deps]
@@ -39,12 +73,12 @@ export function useEffect(callback, deps) {
       hookIndex++
     }
   } else {
-    // 开启一个新的宏任务
-    setTimeout(() => {
+    // 开启一个新的微任务
+    queueMicrotask(() => {
       // 执行 callback 函数，返回一个销毁函数
       let destroy = callback()
       hookStates[currentIndex] = [destroy, deps]
-    });
+    })
     hookIndex++
   }
 }

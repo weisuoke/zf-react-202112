@@ -1,7 +1,7 @@
 import {REACT_CONTEXT, REACT_ELEMENT, REACT_FORWARD_REF_TYPE, REACT_MEMO, REACT_PROVIDER} from "./constants";
 import {shallowEqual, wrapToVdom} from "./utils";
 import { Component, PureComponent } from "./Component";
-import { useState, useMemo, useCallback, useReducer, useEffect } from "./react-dom";
+import { useState, useMemo, useCallback, useReducer, useEffect, useLayoutEffect, useRef } from "./react-dom";
 
 /**
  * 用来创建 React 元素的工厂方法
@@ -97,6 +97,10 @@ function useContext(context) {
   return context._currentValue
 }
 
+function useImperativeHandle(ref, factory) {
+  ref.current = factory()
+}
+
 const React = {
   createElement,
   Component,
@@ -111,6 +115,9 @@ const React = {
   useCallback,
   useReducer,
   useContext,
-  useEffect
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useImperativeHandle
 }
 export default React
